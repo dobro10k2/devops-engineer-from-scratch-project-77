@@ -1,0 +1,19 @@
+# Секретные переменные Terraform
+*.tfvars
+secret.backend.conf
+
+# Локальные стейт-файлы Terraform
+*.tfstate
+*.tfstate.*
+
+# Директория с плагинами провайдеров
+.terraform/
+
+# Чувствительные данные Ansible
+*.retry
+
+# Автогенерируемый инвентарь Ansible
+inventory.ini
+
+# Пароль для Ansible Vault
+.vault_pass

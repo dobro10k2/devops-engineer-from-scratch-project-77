@@ -1,0 +1,6 @@
+---
+# Слушаем все интерфейсы (безопасность обеспечивает Security Group Яндекса)
+redis_bind_interface: "0.0.0.0"
+
+# Забираем пароль из зашифрованной группы webservers
+redis_requirepass: "{{ hostvars[groups['webservers'][0]]['redis_password'] }}"

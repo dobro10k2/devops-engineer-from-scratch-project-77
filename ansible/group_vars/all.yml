@@ -1,0 +1,46 @@
+---
+# Переменная для роли geerlingguy.pip
+pip_install_packages:
+  - name: docker
+
+# Опционально: можно явно указать, что мы хотим установить docker-compose
+docker_install_compose_plugin: true
+
+# Настройки балансировщика
+domain_name: hex-infra.ru
+admin_email: syseror@gmail.com
+
+# Настройки geerlingguy.nginx
+nginx_remove_default_vhost: true # Удаляет стандартную заглушку Nginx
+
+nginx_upstreams:
+  - name: redmine_app
+    servers:
+      # Забираем redmine_port прямо из переменных конкретных нод
+      - "{{ hostvars['app-node-1'].private_ip }}:{{ hostvars['app-node-1'].redmine_port }}"
+      - "{{ hostvars['app-node-2'].private_ip }}:{{ hostvars['app-node-2'].redmine_port }}"
+
+nginx_vhosts:
+  # Слушаем 80 порт и принудительно перенаправляем всех на HTTPS
+  - listen: "80"
+    server_name: "{{ domain_name }}"
+    return: 301 https://$host$request_uri
+
+  # Основной конфиг для HTTPS
+  - listen: 443 ssl
+    server_name: "{{ domain_name }}"
+    state: present
+    # extra_parameters позволяет вставить любой кусок конфига "как есть" (raw text)
+    extra_parameters: |
+      ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem;
+      ssl_certificate_key /etc/letsencrypt/live/{{ domain_name }}/privkey.pem;
+      include /etc/letsencrypt/options-ssl-nginx.conf;
+      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+      location / {
+          proxy_pass http://redmine_app;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }

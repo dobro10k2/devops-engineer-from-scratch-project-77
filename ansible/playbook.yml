@@ -1,0 +1,104 @@
+---
+# === ЭТАП 1: Настройка серверов ===
+- name: Prepare servers and install Docker
+  hosts: all
+  become: true
+  tags: setup
+  pre_tasks:
+    - name: Update apt cache before roles
+      ansible.builtin.apt:
+        update_cache: true
+      changed_when: false # Чтобы линтеры и вывод не ругались на изменение стейта
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+
+# === ЭТАП 2: Поднятие инфраструктурных сервисов (БД и Redis) ===
+- name: Setup Infrastructure Services
+  hosts: infra
+  become: true
+  tags: deploy
+  vars:
+    # Забираем переменные из группы webservers
+    pg_user: "{{ hostvars[groups['webservers'][0]]['db_user'] }}"
+    pg_password: "{{ hostvars[groups['webservers'][0]]['db_password'] }}"
+    pg_db: "{{ hostvars[groups['webservers'][0]]['db_name'] }}"
+
+  roles:
+    - geerlingguy.redis
+
+  tasks:
+    - name: Run PostgreSQL container
+      community.docker.docker_container:
+        name: postgres
+        image: postgres:15
+        state: started
+        restart_policy: always
+        env:
+          POSTGRES_USER: "{{ pg_user }}"
+          POSTGRES_PASSWORD: "{{ pg_password }}"
+          POSTGRES_DB: "{{ pg_db }}"
+        ports:
+          - 5432:5432
+
+# === ЭТАП 3: Деплой Redmine (требование проекта) ===
+- name: Deploy Application
+  hosts: webservers
+  become: true
+  tags: deploy
+  tasks:
+    - name: Ensure app directory exists
+      ansible.builtin.file:
+        path: /opt/redmine
+        state: directory
+        mode: "0755"
+
+    - name: Create .env file from template
+      ansible.builtin.template:
+        src: templates/.env.j2
+        dest: /opt/redmine/.env
+        mode: "0600"
+
+    - name: Run Redmine container
+      community.docker.docker_container:
+        name: redmine
+        image: redmine:latest
+        state: started
+        restart_policy: always
+        env_file: /opt/redmine/.env
+        ports:
+          - "{{ redmine_port }}:3000"
+
+# === ЭТАП 4: Настройка Nginx и HTTPS (на infra-node) ===
+- name: Setup Nginx and SSL Load Balancer
+  hosts: infra
+  become: true
+  tags: deploy
+  roles:
+    # Запускаем роль Galaxy. Она установит Nginx и применит переменные из all.yml
+    - geerlingguy.nginx
+
+  tasks:
+    - name: Install Certbot and Nginx plugin
+      ansible.builtin.apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+        update_cache: true
+
+    - name: Issue Let's Encrypt SSL Certificate and configure Nginx
+      ansible.builtin.command: >
+        certbot --nginx --non-interactive --agree-tos  -m {{ admin_email }} -d {{ domain_name }}
+      args:
+        # Не запускать получение сертификата, если он уже есть
+        creates: /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem
+
+# === ЭТАП 5: Мониторинг Datadog ===
+- name: Setup Datadog Monitoring
+  # Требование: только для группы webservers
+  hosts: webservers
+  become: true
+  tags: deploy
+  roles:
+    - { role: datadog.datadog }
