@@ -5,6 +5,7 @@ secret.backend.conf
 # Локальные стейт-файлы Terraform
 *.tfstate
 *.tfstate.*
+.terraform.lock.hcl
 
 # Директория с плагинами провайдеров
 .terraform/
