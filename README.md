@@ -163,42 +163,42 @@ make tf-destroy
 
 ```mermaid
 graph LR
-    %% Определение узлов
-    Client((🌐 Internet<br>Клиент))
-    Upmon((📡 UptimeRobot<br>Внешний мониторинг))
-    DD((🐶 Datadog<br>Облако))
+    %% Node Definitions
+    Client((🌐 Internet<br>Client))
+    Upmon((📡 UptimeRobot<br>External Monitoring))
+    DD((🐶 Datadog<br>Cloud))
 
     subgraph "Yandex Cloud (VPC)"
 
         subgraph "infra-node (Public & Private IP)"
             Nginx["🟢 Nginx<br>(Reverse Proxy + SSL)"]
-            DB[("🐘 PostgreSQL<br>(Порт 5432)")]
-            Cache[("🔴 Redis<br>(Порт 6379)")]
+            DB[("🐘 PostgreSQL<br>(Port 5432)")]
+            Cache[("🔴 Redis<br>(Port 6379)")]
         end
 
-        subgraph "webservers (Только Private IP)"
+        subgraph "webservers (Private IP only)"
             App1["💎 app-node-1<br>(Redmine + DD Agent)"]
             App2["💎 app-node-2<br>(Redmine + DD Agent)"]
         end
 
-        %% Связи (Трафик)
+        %% Links (Traffic)
         Client -- "HTTPS (443)" --> Nginx
         Upmon -. "HTTP Check (Ping)" .-> Nginx
 
-        Nginx -- "HTTP (8080)<br>Балансировка" --> App1
-        Nginx -- "HTTP (8080)<br>Балансировка" --> App2
+        Nginx -- "HTTP (8080)<br>Load Balancing" --> App1
+        Nginx -- "HTTP (8080)<br>Load Balancing" --> App2
 
-        App1 -. "Чтение/Запись" .-> DB
-        App2 -. "Чтение/Запись" .-> DB
+        App1 -. "Read/Write" .-> DB
+        App2 -. "Read/Write" .-> DB
 
-        App1 -. "Кэш/Очереди" .-> Cache
-        App2 -. "Кэш/Очереди" .-> Cache
+        App1 -. "Cache/Queues" .-> Cache
+        App2 -. "Cache/Queues" .-> Cache
 
-        App1 == "Внутренние метрики" ==> DD
-        App2 == "Внутренние метрики" ==> DD
+        App1 == "Internal Metrics" ==> DD
+        App2 == "Internal Metrics" ==> DD
     end
 
-    %% Стилизация цветов
+    %% Color Styling
     style Nginx fill:#009639,color:#fff,stroke:#333,stroke-width:2px
     style DB fill:#336791,color:#fff,stroke:#333,stroke-width:2px
     style Cache fill:#dc382d,color:#fff,stroke:#333,stroke-width:2px
@@ -212,18 +212,21 @@ graph LR
 
 ### 1. Application & SSL
 The Redmine application is securely accessible via HTTPS, with certificates automatically provisioned and managed idempotently by Let's Encrypt through the Nginx reverse proxy.
+
 ![Redmine Secured](img/redmine_ssl.png)
 
 ### 2. Infrastructure Monitoring & Alerts
 All application nodes are actively monitored using **Datadog**. Automated alerts are provisioned via Terraform to notify the team upon HTTP check failures. External availability is verified via **UptimeRobot**.
 
 #### A. Datadog
+
 ![Datadog Infrastructure](img/datadog_infra.png)
 ![Datadog Dashboard](img/datadog_dashb.png)
 ![Datadog Alerts](img/datadog_alerts.png)
 ![Datadog Alerts_2](img/datadog_alerts_2.png)
 
 #### B. UptimeRobot
+
 ![UptimeRobot Alerts](img/uptimerobot_alerts.png)
 ![UptimeRobot Alerts_2](img/uptimerobot_alerts_2.png)
 ![UptimeRobot Alerts_3](img/uptimerobot_alerts_3.png)
