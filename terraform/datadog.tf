@@ -1,10 +1,4 @@
-provider "datadog" {
-  api_key = var.datadog_api_key
-  app_key = var.datadog_app_key
-  api_url = "https://api.datadoghq.eu/"
-}
-
-# Сам Alert (Монитор), который проверяет доступность
+# Alert (Монитор), который проверяет доступность
 resource "datadog_monitor" "redmine_availability" {
   name    = "Redmine is DOWN on {{host.name}}"
   type    = "service check"
