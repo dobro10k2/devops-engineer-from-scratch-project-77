@@ -6,6 +6,7 @@ secret.backend.conf
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
+versions.tf
 
 # Директория с плагинами провайдеров
 .terraform/
