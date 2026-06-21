@@ -1,11 +1,63 @@
-# Yandex Cloud
-yc_token     = "your-yc-token"
-yc_cloud_id  = "your-cloud-id"
-yc_folder_id = "your-folder-id"
+# =============================================================================
+# Yandex Cloud Credentials
+# =============================================================================
+# IAM-токен для аутентификации в облаке.
+# Получить можно через: yc iam create-token
+yc_token     = "t1.9euelZq..."
+
+# Идентификаторы облака и фолдера (видны в консоли Yandex Cloud)
+yc_cloud_id  = "b1g..."
+yc_folder_id = "b1g..."
+
+# Зона доступности для развёртывания ресурсов
 yc_zone      = "ru-central1-a"
 
-# Datadog
-datadog_api_key = "your-datadog-api-key"
-datadog_app_key = "your-datadog-app-key"
 
-domain = "example.com"
+# =============================================================================
+# Network Configuration
+# =============================================================================
+# Имена существующих сетевых ресурсов (если используете готовую инфраструктуру)
+network_name = "devops-project-network"
+subnet_name  = "devops-project-subnet"
+
+
+# =============================================================================
+# VM Access Settings
+# =============================================================================
+# Публичный SSH-ключ для подключения к виртуальным машинам
+# Генерация: ssh-keygen -t ed25519 -C "your_email@example.com"
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... your_email@example.com"
+
+
+# =============================================================================
+# Project Identifiers
+# =============================================================================
+# Уникальное имя проекта (используется в нейминге ресурсов)
+project_name = "devops-engineer-77"
+
+# Доменное имя для балансировщика нагрузки
+lb_domain    = "devops-77.example.com"
+
+# ID SSL-сертификата (создаётся в Yandex Certificate Manager)
+certificate_id = "fpq..."
+
+# Домен приложения для DNS-записей
+app_domain   = "devops-app.example.com"
+
+# ID DNS-зоны в Yandex DNS
+dns_zone_id  = "z..."
+
+
+# =============================================================================
+# Monitoring & Alerts (Datadog)
+# =============================================================================
+# Ключи API для интеграции с Datadog
+# Доступны в настройках организации: https://app.datadoghq.com/organization-settings/api-keys
+datadog_api_key = "dd_api_key_placeholder"
+datadog_app_key = "dd_app_key_placeholder"
+
+# Регион Datadog (datadoghq.com или datadoghq.eu)
+datadog_site    = "datadoghq.eu"
+
+# Флаг включения мониторинга
+datadog_monitor_enabled = true
