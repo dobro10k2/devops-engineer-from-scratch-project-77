@@ -3,7 +3,7 @@
 
 # Infrastructure as Code & Continuous Monitoring
 
-This project automates the provisioning of cloud infrastructure and the configuration of a 3-node Docker cluster in Yandex Cloud using **Terraform** and **Ansible**. 
+This project automates the provisioning of cloud infrastructure and the configuration of a 3-node Docker cluster in Yandex Cloud using **Terraform** and **Ansible**.
 
 The infrastructure is designed to host the **Redmine** containerized application with an **Nginx** load balancer (secured via fully idempotent Let's Encrypt SSL configuration), a **PostgreSQL** database, **Redis** for caching, and comprehensive monitoring using **Datadog** (with alerts managed via Terraform) and **UptimeRobot**. Terraform state is securely stored remotely in a Yandex Object Storage (S3) bucket.
 
@@ -70,6 +70,7 @@ Before you begin, ensure you have the following installed on your local control 
    ```bash
    echo "your_secure_vault_password" > .vault_pass
    ```
+   *(Note: This file is ignored by Git).*
 
 ## Usage
 
@@ -142,22 +143,20 @@ make tf-destroy
 │   │   └── webservers/
 │   │       ├── vars.yml    # App config (Datadog site, ports, DB/Redis hosts, Nginx SSL)
 │   │       └── vault.yml   # Encrypted secrets (Passwords)
-│   ├── templates/          # Jinja2 templates (e.g., .env.j2)
-│   └── playbook.yml        # Main playbook logic (imported by root playbook)
-├── inventory.ini           # Auto-generated dynamic inventory
-├── playbook.yml            # Entrypoint playbook for Hexlet compatibility
-├── requirements.yml        # Ansible Galaxy dependencies
+│   ├── playbook.yml        # Main playbook logic
+│   ├── requirements.yml    # Ansible Galaxy dependencies
+│   └── templates/          # Jinja2 templates (e.g., .env.j2)
+├── img/                    # Visual documentation assets
 └── terraform/
     ├── backend.tf          # S3 Remote State configuration
-    ├── compute.tf          # VM provisioning
-    ├── datadog.tf          # Datadog provider and availability monitors
     ├── dns.tf              # DNS zone and A-record for hex-infra.ru
     ├── inventory.tftpl     # Template for dynamic Ansible inventory
-    ├── network.tf          # VPC, Subnets, and Security Groups
+    ├── main.tf             # Core resources (VM provisioning, VPC, Security Groups)
+    ├── monitoring.tf       # Datadog provider and availability monitors
     ├── outputs.tf          # Outputs and local_file generator for inventory
-    ├── providers.tf        # Yandex provider configuration
-    ├── variables.tf        # Variable definitions
-    └── versions.tf         # Terraform and provider versions
+    ├── provider.tf         # Yandex provider configuration
+    ├── terraform.tfvars.example # Example variable definitions
+    └── variables.tf        # Variable declarations
 ```
 
 ## Architecture Diagram
@@ -166,6 +165,8 @@ make tf-destroy
 graph LR
     %% Определение узлов
     Client((🌐 Internet<br>Клиент))
+    Upmon((📡 UptimeRobot<br>Внешний мониторинг))
+    DD((🐶 Datadog<br>Облако))
 
     subgraph "Yandex Cloud (VPC)"
 
@@ -176,12 +177,13 @@ graph LR
         end
 
         subgraph "webservers (Только Private IP)"
-            App1["💎 app-node-1<br>(Redmine :8080)"]
-            App2["💎 app-node-2<br>(Redmine :8080)"]
+            App1["💎 app-node-1<br>(Redmine + DD Agent)"]
+            App2["💎 app-node-2<br>(Redmine + DD Agent)"]
         end
 
         %% Связи (Трафик)
         Client -- "HTTPS (443)" --> Nginx
+        Upmon -. "HTTP Check (Ping)" .-> Nginx
 
         Nginx -- "HTTP (8080)<br>Балансировка" --> App1
         Nginx -- "HTTP (8080)<br>Балансировка" --> App2
@@ -191,6 +193,9 @@ graph LR
 
         App1 -. "Кэш/Очереди" .-> Cache
         App2 -. "Кэш/Очереди" .-> Cache
+
+        App1 == "Внутренние метрики" ==> DD
+        App2 == "Внутренние метрики" ==> DD
     end
 
     %% Стилизация цветов
@@ -199,6 +204,8 @@ graph LR
     style Cache fill:#dc382d,color:#fff,stroke:#333,stroke-width:2px
     style App1 fill:#e3000f,color:#fff,stroke:#333,stroke-width:2px
     style App2 fill:#e3000f,color:#fff,stroke:#333,stroke-width:2px
+    style Upmon fill:#2a2a2a,color:#33cc33,stroke:#33cc33,stroke-width:2px
+    style DD fill:#632ca6,color:#fff,stroke:#fff,stroke-width:2px
 ```
 
 ## Visual Documentation
@@ -211,14 +218,19 @@ The Redmine application is securely accessible via HTTPS, with certificates auto
 All application nodes are actively monitored using **Datadog**. Automated alerts are provisioned via Terraform to notify the team upon HTTP check failures. External availability is verified via **UptimeRobot**.
 
 #### A. Datadog
-
 ![Datadog Infrastructure](img/datadog_infra.png)
 ![Datadog Dashboard](img/datadog_dashb.png)
 ![Datadog Alerts](img/datadog_alerts.png)
 ![Datadog Alerts_2](img/datadog_alerts_2.png)
 
 #### B. UptimeRobot
-
 ![UptimeRobot Alerts](img/uptimerobot_alerts.png)
 ![UptimeRobot Alerts_2](img/uptimerobot_alerts_2.png)
 ![UptimeRobot Alerts_3](img/uptimerobot_alerts_3.png)
+
+## Security Notes
+
+* **Terraform State:** Stored remotely in Yandex Object Storage (S3) — never committed to Git
+* **Secrets:** All sensitive data encrypted with Ansible Vault
+* **Credentials:** Passed via environment variables or ignored config files
+* **SSH Keys:** Public keys only; private keys never stored in repository
