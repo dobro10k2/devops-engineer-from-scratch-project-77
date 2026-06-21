@@ -10,7 +10,8 @@ provider "registry.terraform.io/datadog/datadog" {
 }
 
 provider "registry.terraform.io/hashicorp/local" {
-  version = "2.9.0"
+  version     = "2.9.0"
+  constraints = ">= 2.0.0"
   hashes = [
     "h1:9rBZCMNpxKwMlRbWH2QpwD3kqUCAejdOZQ/aiiDObXQ=",
   ]
@@ -25,9 +26,9 @@ provider "registry.terraform.io/hashicorp/random" {
 }
 
 provider "registry.terraform.io/yandex-cloud/yandex" {
-  version     = "0.206.0"
+  version     = "0.209.0"
   constraints = ">= 0.100.0"
   hashes = [
-    "h1:AC7EwlsINUoWj3q/ENi+WGc+wgHj6X1CPcomKlVAL4s=",
+    "h1:AHvYhb+NgjkAcf1VwA6um6eBV9bBNX0qLKO1LUUyieo=",
   ]
 }
