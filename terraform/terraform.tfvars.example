@@ -1,0 +1,11 @@
+# Yandex Cloud
+yc_token     = "your-yc-token"
+yc_cloud_id  = "your-cloud-id"
+yc_folder_id = "your-folder-id"
+yc_zone      = "ru-central1-a"
+
+# Datadog
+datadog_api_key = "your-datadog-api-key"
+datadog_app_key = "your-datadog-app-key"
+
+domain = "example.com"
